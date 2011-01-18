@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+      xmlns:email="http://www.mulesoft.org/schema/mule/email"
+      xmlns:rss="http://www.mulesoft.org/schema/mule/rss"
+      xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/3.1/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/3.1/mule-email.xsd
+        http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/3.1/mule-smtp.xsd
+        http://www.mulesoft.org/schema/mule/rss http://www.mulesoft.org/schema/mule/rss/3.1/mule-rss.xsd">
+
+    <spring:bean id="ppc" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <spring:property name="location" value="classpath:rss2email.properties"/>
+    </spring:bean>
+
+    <http:polling-connector name="poller" pollingFrequency="${pollingFrequency}"/>
+
+    <flow name="httpPoll">
+        <!-- poll an RSS feed -->
+        <http:inbound-endpoint address="http://feeds.pheedo.com/techtarget/tsscom/home"/>
+
+        <!-- split the feed into individual messages -->
+        <rss:feed-splitter/>
+
+        <!--
+            Setup the message properties that the SMTP transport expects to construct a proper
+            mail message.
+        -->
+        <message-properties-transformer>
+            <add-message-property key="fromAddress" value="${sender}"/>
+            <add-message-property key="toAddresses" value="${recipients}"/>
+            <add-message-property key="subject" value="#[groovy:payload.title]"/>
+            <add-message-property key="contentType" value="text/html"/>
+        </message-properties-transformer>
+
+        <!--
+            Extract the description of the message to use as body of the eMail
+         -->
+        <expression-transformer>
+            <return-argument evaluator="groovy" expression="payload.description.value"/>
+        </expression-transformer>
+
+        <!-- send via email -->
+        <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}">
+            <email:string-to-email-transformer/>
+        </smtp:outbound-endpoint>
+    </flow>
+</mule>
