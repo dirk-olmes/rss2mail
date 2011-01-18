@@ -3,3 +3,8 @@ rss2email
 
 This example shows how to retrieve an RSS feed, split it into individual
 messages and send each message to an eMail recipient.
+
+v1: introduce the example, everything in one flow
+v2: add idempotency
+v3: refactor for unit tests
+v4: add quartz polling
