@@ -1,0 +1,5 @@
+rss2email
+---------
+
+This example shows how to retrieve an RSS feed, split it into individual
+messages and send each message to an eMail recipient.
