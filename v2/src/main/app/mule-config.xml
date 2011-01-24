@@ -18,11 +18,11 @@
         <spring:property name="location" value="classpath:rss2email.properties"/>
     </spring:bean>
 
-    <http:polling-connector name="poller" pollingFrequency="${pollingFrequency}"/>
-
     <flow name="httpPoll">
         <!-- poll an RSS feed -->
-        <http:inbound-endpoint address="http://feeds.pheedo.com/techtarget/tsscom/home"/>
+        <poll frequency="${pollingFrequency}">
+            <http:outbound-endpoint address="http://feeds.pheedo.com/techtarget/tsscom/home"/>
+        </poll>
 
         <!-- split the feed into individual messages -->
         <rss:feed-splitter/>
