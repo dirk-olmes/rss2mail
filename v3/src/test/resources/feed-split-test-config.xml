@@ -13,5 +13,5 @@
     </spring:beans>
 
     <!-- Messages from the feedSplitter flow are sent to this endpoint. -->
-    <vm:endpoint name="sendMail" path="sendMail" exchange-pattern="one-way"/>
+    <vm:endpoint name="sendMail" path="sendMail"/>
 </mule>
