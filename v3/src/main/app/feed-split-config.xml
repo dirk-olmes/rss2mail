@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+      xmlns:email="http://www.mulesoft.org/schema/mule/email"
+      xmlns:rss="http://www.mulesoft.org/schema/mule/rss"
+      xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/3.1/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/3.1/mule-email.xsd
+        http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/3.1/mule-smtp.xsd
+        http://www.mulesoft.org/schema/mule/rss http://www.mulesoft.org/schema/mule/rss/3.1/mule-rss.xsd">
+
+    <flow name="feedSplitter">
+        <!-- split the feed into individual messages -->
+        <rss:feed-splitter/>
+
+        <!--
+            Compute an md5 hash on the URI of the SyndEntry (the payload). This will be used as
+            the id expression in the idempotent message filter below. A naive approach would have
+            been to use the URI directly but since the URI probably contains '=' and friends it
+            conflicts with Java's Properties syntax when stored in the simple-text-file-store
+            used in the idempotent-message-filter below.
+        -->
+        <message-properties-transformer>
+            <add-message-property key="feed.guid" value="#[md5:groovy:payload.uri]"/>
+        </message-properties-transformer>
+
+        <!--
+            Make sure each entry is only sent once.
+         -->
+        <idempotent-message-filter idExpression="#[header:feed.guid]">
+            <simple-text-file-store name="rss2mail-store" directory="${java.io.tmpdir}/rss2mail" maxEntries="1000"/>
+        </idempotent-message-filter>
+
+        <!--
+            Setup the message properties that the SMTP transport expects to construct a proper
+            mail message.
+        -->
+        <message-properties-transformer>
+            <add-message-property key="fromAddress" value="${sender}"/>
+            <add-message-property key="toAddresses" value="${recipients}"/>
+            <add-message-property key="subject" value="#[groovy:payload.title]"/>
+            <add-message-property key="contentType" value="text/html"/>
+        </message-properties-transformer>
+
+        <!--
+            Extract the description of the message to use as body of the eMail
+         -->
+        <expression-transformer>
+            <return-argument evaluator="groovy" expression="payload.description.value"/>
+        </expression-transformer>
+
+        <outbound-endpoint ref="sendMail"/>
+    </flow>
+</mule>
