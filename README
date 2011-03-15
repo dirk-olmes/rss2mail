@@ -8,3 +8,8 @@ v1: introduce the example, everything in one flow
 v2: add idempotency
 v3: refactor for unit tests
 v4: add quartz polling
+
+This example is discussed in a series of blog posts:
+
+http://blogs.mulesoft.org/feed-my-inbox-reading-rss-feeds-with-mule-esb
+http://blogs.mulesoft.org/feed-my-inbox-reading-rss-feeds-with-mule-esb-part-2
